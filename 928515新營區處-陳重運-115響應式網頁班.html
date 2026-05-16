@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-bs-theme="dark">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no" />
+    <title>小八與吉伊 深夜lo-fi工作室</title>
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        crossorigin="anonymous"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+
+        footer {
+            margin-top: 60px;
+            text-align: center;
+        }
+
+        .container>div {
+            margin-top: 60px;
+        }
+
+        /* --- 導覽列 --- */
+        .navbar {
+            background-color: rgba(33, 37, 41, 0.95) !important;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        /* --- 名牌按鈕樣式 --- */
+        .user-badge-btn {
+            border-color: #ffc107;
+            color: #ffc107;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .user-badge-btn:hover {
+            background-color: #ffc107;
+            color: #212529;
+            box-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
+        }
+
+        /* =========================================
+           RWD 直播區與聊天室版面 (核心改動區)
+           ========================================= */
+        .live-wrapper {
+            position: relative;
+            display: flex;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            background-color: #1a1d20;
+        }
+
+        #live-screen {
+            position: relative;
+            width: 100%;
+            background: #000 overflow: hidden;
+        }
+
+        .live-badge {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: transparent;
+            color: white;
+            padding: 5px 5px;
+            border: 2px solid #dc3545;
+            border-radius: 5px;
+            font-weight: bold;
+            z-index: 10;
+            box-shadow: 0 0 5px rgba(220, 53, 69, 0.5);
+        }
+
+        #overlay-chat {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 15px;
+            z-index: 15;
+        }
+
+        #chat-messages-container {
+            flex-grow: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            /* 讓舊訊息往上頂 */
+        }
+
+        /* 電腦寬螢幕：聊天室半透明疊加在影片右側 */
+        @media (min-width: 992px) {
+            .live-wrapper {
+                flex-direction: row;
+            }
+
+            #live-screen {
+                height: 500px;
+            }
+
+            #overlay-chat {
+                position: absolute;
+                right: 0;
+                top: 0;
+                width: 35%;
+                height: 100%;
+                background: linear-gradient(to right, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.6) 20%, rgba(0, 0, 0, 0.9) 100%);
+            }
+        }
+
+        /* 手機/平板窄螢幕：影片與聊天室上下獨立拆分 */
+        @media (max-width: 991px) {
+            .live-wrapper {
+                flex-direction: column;
+            }
+
+            #live-screen {
+                height: 250px;
+                /* 手機上影片高度變小 */
+            }
+
+            #overlay-chat {
+                position: relative;
+                width: 100%;
+                height: 350px;
+                /* 給予聊天室獨立的高度 */
+                background: #111;
+                /* 獨立區塊給個實體深色底 */
+                border-top: 2px solid #333;
+            }
+        }
+
+        /* --- 聊天輸入區 --- */
+        .chat-input-area {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+
+        /* 聊天訊息樣式 */
+        .chat-msg {
+            color: #fff;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            text-shadow: 1px 1px 2px #000;
+            animation: fadeIn 0.3s ease-in;
+            border-left: 3px solid #198754;
+            padding-left: 8px;
+            background-color: rgba(0, 0, 0, 0.4);
+            border-radius: 0 5px 5px 0;
+            word-break: break-all;
+        }
+
+        .aurora-text {
+            background: linear-gradient(90deg, #ff9a9e, #fecfef, #f6d365, #fda085);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: aurora-shift 4s ease infinite;
+            font-weight: bold;
+            text-shadow: 0 0 8px rgba(255, 154, 158, 0.4);
+        }
+
+        @keyframes aurora-shift {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .chat-msg-donate {
+            border-left: 4px solid #f6d365;
+            background: linear-gradient(to right, rgba(246, 211, 101, 0.15), rgba(0, 0, 0, 0.4));
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* --- 計時器增加動畫 --- */
+        @keyframes timerBoost {
+            0% {
+                transform: scale(1);
+                color: #ffc107;
+                text-shadow: none;
+            }
+
+            20% {
+                transform: scale(1.25);
+                color: #7cffb2;
+                text-shadow: 0 0 16px #7cffb2, 0 0 32px #7cffb2;
+            }
+
+            50% {
+                transform: scale(1.15);
+                color: #7cffb2;
+                text-shadow: 0 0 10px #7cffb2;
+            }
+
+            100% {
+                transform: scale(1);
+                color: #ffc107;
+                text-shadow: none;
+            }
+        }
+
+        .timer-boosting {
+            animation: timerBoost 1.2s ease forwards;
+        }
+
+        @keyframes plusLabel {
+            0% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0) scale(1);
+            }
+
+            80% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(-40px) scale(1.1);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-60px) scale(0.9);
+            }
+        }
+
+        .plus-label {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            color: #7cffb2;
+            font-weight: bold;
+            font-size: 1.3rem;
+            pointer-events: none;
+            white-space: nowrap;
+            animation: plusLabel 1.2s ease forwards;
+            z-index: 999;
+        }
+
+        @keyframes noteFloat {
+            0% {
+                opacity: 1;
+                transform: translate(0, 0) rotate(0deg) scale(1);
+            }
+
+            60% {
+                opacity: 1;
+                transform: translate(var(--nx, 20px), -60px) rotate(20deg) scale(1.2);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translate(var(--nx, 30px), -100px) rotate(-10deg) scale(0.8);
+            }
+        }
+
+        @keyframes taxiDrive {
+            0% {
+                transform: translateX(0);
+            }
+
+            100% {
+                transform: translateX(110vw);
+            }
+        }
+
+        /* --- 彈幕 --- */
+        #danmaku-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .danmaku-msg {
+            position: absolute;
+            white-space: nowrap;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px #000;
+            right: -100%;
+            animation: moveLeft 8s linear forwards;
+        }
+
+        .danmaku-player {
+            color: #ffc107;
+            text-shadow: 0 0 8px rgba(255, 193, 7, 0.8), 2px 2px 4px #000;
+        }
+
+        /* 路人彈幕：白色 */
+        .danmaku-bot {
+            color: #ffffff;
+            text-shadow: 2px 2px 4px #000;
+        }
+
+        @keyframes moveLeft {
+            from {
+                transform: translateX(0);
+            }
+
+            to {
+                transform: translateX(-150vw);
+            }
+        }
+
+        /* --- 計時器與打賞卡片 --- */
+        .timer-box {
+            background-color: #1a1d20;
+            border: 2px solid #ffc107;
+            box-shadow: 0 0 15px rgba(255, 193, 7, 0.2);
+        }
+
+        .donate-card {
+            transition: all 0.3s ease-in-out;
+            cursor: pointer;
+            background-color: #1a1d20;
+        }
+
+        .donate-card:hover {
+            transform: translateY(-8px);
+            background-color: #212529;
+            box-shadow: 0 8px 20px rgba(255, 255, 255, 0.1);
+        }
+
+        /* --- 打氣牆 --- */
+        .cheer-card {
+            background: rgba(33, 37, 41, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .cheer-card:hover {
+            background: rgba(43, 48, 53, 0.9);
+            border-color: rgba(246, 211, 101, 0.5);
+            box-shadow: 0 5px 15px rgba(246, 211, 101, 0.1);
+        }
+
+        .cheer-rank-1 {
+            border-left: 5px solid #ffd700;
+        }
+
+        .cheer-rank-2 {
+            border-left: 5px solid #c0c0c0;
+        }
+
+        .cheer-rank-3 {
+            border-left: 5px solid #cd7f32;
+        }
+    </style>
+    <!--真的音樂靠js-->
+    <script src="https://cdn.jsdelivr.net/npm/tone@15/build/Tone.js"></script>
+    <script src="lofi-music.js"></script>
+</head>
+
+<body>
+    <div class="container pb-5">
+
+        <nav class="navbar navbar-expand-lg fixed-top">
+            <div class="container-fluid gap-2">
+                <a class="navbar-brand text-warning fw-bold" href="#">
+                    <span class="material-symbols-outlined align-middle">local_cafe</span>
+                    <span class="d-none d-md-inline">小八與吉伊 深夜lo-fi工作室</span>
+                    <span class="d-inline d-md-none">深夜lo-fi工作室</span>
+                </a>
+
+                <!-- 音樂控制列 -->
+                <div class="d-flex align-items-center gap-2 ms-auto">
+                    <button id="music-toggle-btn" class="btn btn-sm btn-outline-warning d-flex align-items-center gap-1"
+                        onclick="toggleMusic()">
+                        <span class="material-symbols-outlined" style="font-size:1.1rem;">play_arrow</span>
+                        <span id="music-btn-label">播放音樂</span>
+                    </button>
+
+                    <!-- 音量控制：手機隱藏 -->
+                    <div class="d-none d-lg-flex align-items-center gap-2">
+                        <span class="material-symbols-outlined text-muted" style="font-size:1rem;">volume_down</span>
+                        <input type="range" id="volume-slider" min="0" max="100" value="40" class="form-range"
+                            style="width:100px;" oninput="setMusicVolume(this.value)">
+                        <span class="material-symbols-outlined text-muted" style="font-size:1rem;">volume_up</span>
+                    </div>
+
+                    <!-- 狀態文字：平板以下隱藏 -->
+                    <span class="d-none d-md-inline text-muted" style="font-size:0.8rem;" id="music-status">⏸ 已停止</span>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 1. 直播畫面區與聊天室 -->
+        <div class="live-wrapper mt-5">
+            <div id="live-screen">
+                <img src="happyworker.gif" alt="直播畫面"
+                    style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:1;">
+                <div class="live-badge">🔴 陪伴加班</div>
+                <div id="danmaku-container"></div>
+            </div>
+
+            <div id="overlay-chat">
+                <div id="chat-messages-container"></div>
+
+                <!--輸入區與玩家名牌 -->
+                <div class="chat-input-area d-flex align-items-center">
+                    <button class="btn btn-outline-warning btn-sm d-flex align-items-center user-badge-btn px-2 me-2"
+                        onclick="changeUserName()" title="點擊更換ID">
+                        <span id="display-user-name"
+                            style="max-width: 100px; overflow: hidden; text-overflow: ellipsis;">會松鼠語的高剛</span>
+                    </button>
+                    <input type="text" id="free-chat-input"
+                        class="form-control form-control-sm bg-dark text-light border-secondary shadow-none"
+                        placeholder="">
+                    <button class="btn btn-warning btn-sm ms-2 fw-bold text-dark" onclick="sendFreeChat()"><span
+                            class="material-symbols-outlined">
+                            send
+                        </span></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 下班倒數計時器 -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="timer-box p-3 rounded text-center">
+                    <h4 class="mb-0">
+                        <span class="material-symbols-outlined align-middle text-warning">timer</span>
+                        大家還能陪主播撐：
+                        <div style="position:relative; display:inline-block;">
+                            <span id="countdown-display"
+                                class="text-warning fw-bold fs-2 font-monospace align-middle ms-2">01:00:00</span>
+                        </div>
+                    </h4>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. 打賞方案 -->
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 mt-4">
+            <div class="col">
+                <div class="card donate-card h-100 border-info"
+                    onclick="initiatePlayerDonate('點播陪伴音樂', 30, '謝謝音樂陪伴，大家一起深呼吸！', 3, 'music')">
+                    <div class="card-body text-center">
+                        <h1><span class="material-symbols-outlined">
+                                music_history
+                            </span></h1>
+                        <h5 class="card-title mt-2">點播陪伴音樂</h5>
+                        <p class="text-info">價格: $30</p>
+                        <button class="btn btn-outline-info w-100 btn-glow">贊助</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col">
+                <div class="card donate-card h-100 border-secondary"
+                    onclick="initiatePlayerDonate('再加班5分鐘', 50, 'Keep going！再撐 5 分鐘！', 5, 'default')">
+                    <div class="card-body text-center">
+                        <h1><span class="material-symbols-outlined">
+                                timer_10_alt_1
+                            </span></h1>
+                        <h5 class="card-title mt-2">5分鐘加班費</h5>
+                        <p class="text-secondary">價格: $50</p>
+                        <button class="btn btn-outline-light w-100 btn-glow">贊助</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col">
+                <div class="card donate-card h-100 border-warning"
+                    onclick="initiatePlayerDonate('10分鐘加班費', 100, '再10分鐘就好！', 10, 'default')">
+                    <div class="card-body text-center">
+                        <h1><span class="material-symbols-outlined">
+                                update
+                            </span></h1>
+                        <h5 class="card-title mt-2">10分鐘加班費</h5>
+                        <p class="text-warning">價格: $100</p>
+                        <button class="btn btn-warning w-100 text-dark fw-bold btn-glow">贊助</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col">
+                <div class="card donate-card h-100 border-danger"
+                    onclick="initiatePlayerDonate('計程車費', 500, '大家辛苦了，這點心意拿去買宵夜搭車回家吧！', 0, 'taxi')">
+                    <div class="card-body text-center">
+                        <h1 class="display-5">🚕</h1>
+                        <h5 class="card-title mt-2">鹽酥雞、夜間計程車費</h5>
+                        <p class="text-danger">價格: $200</p>
+                        <button class="btn btn-danger w-100 fw-bold btn-glow">贊助</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. 深夜打氣牆 -->
+        <div id="leaderboard-section" class="mt-5">
+            <h3 class="text-warning mb-4"><span
+                    class="material-symbols-outlined align-middle">local_fire_department</span>
+                <b>深夜打氣牆</b> <span class="fs-6 text-muted ms-2">大家留下的溫暖都在這裡</span>
+            </h3>
+            <div id="cheer-wall-container" class="row g-3">
+                <div class="col-12 text-center text-muted py-5">目前牆上還是空的，來留下第一句鼓勵吧！</div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // --- 玩家狀態系統 ---
+        let playerState = { id: 'player_user_01', name: '會松鼠語的高剛', totalDonated: 0 };
+        let donationLedger = {};
+
+        // 更改名稱
+        async function changeUserName() {
+            const { value: newName } = await Swal.fire({
+                title: '更換顯示名牌',
+                input: 'text',
+                inputLabel: '請輸入你想在聊天室顯示的名字',
+                inputValue: playerState.name,
+                showCancelButton: true,
+                confirmButtonText: '換發名牌',
+                cancelButtonText: '取消',
+                background: '#212529',
+                color: '#fff'
+            });
+
+            if (newName && newName.trim() !== "") {
+                playerState.name = newName.trim();
+                document.getElementById('display-user-name').innerText = playerState.name;
+
+                if (donationLedger[playerState.id]) {
+                    donationLedger[playerState.id].name = playerState.name;
+                    updateCheerWall();
+                }
+                Swal.fire({ icon: 'success', title: '名牌換發成功！', text: `你好，${playerState.name}，辛苦了！`, timer: 1500, showConfirmButton: false, background: '#212529', color: '#fff' });
+            }
+        }
+
+        // --- 免費發送聊天邏輯 ---
+        function sendFreeChat() {
+            const inputElement = document.getElementById('free-chat-input');
+            const msg = inputElement.value.trim();
+            if (msg !== "") {
+                // 呼叫原本的聊天 UI 函式：是玩家(true)，但不是斗內(false)
+                addOverlayChat(playerState.name, msg, true, false);
+                inputElement.value = ""; // 清空輸入框
+            }
+        }
+
+        // 監聽 Enter 鍵發送免費留言
+        document.addEventListener("DOMContentLoaded", () => {
+            const chatInput = document.getElementById('free-chat-input');
+            chatInput.addEventListener("keypress", function (event) {
+                if (event.key === "Enter") {
+                    event.preventDefault(); // 防止重新載入網頁
+                    sendFreeChat();
+                }
+            });
+        });
+
+        // --- 倒數計時器 ---
+        let remainingSeconds = 200;
+        const timerDisplay = document.getElementById('countdown-display');
+        function updateTimerUI() {
+            let h = Math.floor(remainingSeconds / 3600).toString().padStart(2, '0');
+            let m = Math.floor((remainingSeconds % 3600) / 60).toString().padStart(2, '0');
+            let s = (remainingSeconds % 60).toString().padStart(2, '0');
+            timerDisplay.innerText = `${h}:${m}:${s}`;
+        }
+        let isLive = true
+        setInterval(() => {
+            if (remainingSeconds > 0) {
+                remainingSeconds--;
+                updateTimerUI();
+
+                // 如果原本是下播狀態，有人贊助讓時間回來 → 復播
+                if (!isLive) goLive();
+
+            } else if (isLive) {
+                // 剛歸零，觸發下播
+                timerDisplay.innerText = "00:00:00";
+                goOffline();
+            }
+        }, 1000);
+        // --- 下播 ---
+        function goOffline() {
+            isLive = false;
+            document.querySelector('#live-screen img').src = "offline.png";
+            document.querySelector('.live-badge').innerHTML = "⚫ 下播中";
+            document.querySelector('.live-badge').style.borderColor = "#6c757d";
+            addOverlayChat("系統", "主播已下班，感謝今晚的陪伴 🌙", false, false);
+        }
+
+        // --- 復播 ---
+        function goLive() {
+            isLive = true;
+            document.querySelector('#live-screen img').src = "happyworker.gif";
+            document.querySelector('.live-badge').innerHTML = "🔴 陪伴加班";
+            document.querySelector('.live-badge').style.borderColor = "#dc3545";
+            addOverlayChat("系統", "主播被贊助召回來了！繼續加班 💪", false, false);
+        }
+
+        updateTimerUI();
+
+        function boostTimer(addedMinutes, type = 'default') {
+            const display = document.getElementById('countdown-display');
+            const wrap = display.parentElement;
+
+            if (type === 'music') {
+                const notes = ['♩', '♪', '♫', '♬'];
+                for (let i = 0; i < 6; i++) {
+                    setTimeout(() => {
+                        const note = document.createElement('span');
+                        note.textContent = notes[Math.floor(Math.random() * notes.length)];
+                        const nx = (Math.random() - 0.5) * 80;
+                        note.style.cssText = `
+                    position: absolute;
+                    left: ${20 + Math.random() * 60}%;
+                    top: 50%;
+                    color: #0dcaf0;
+                    font-size: ${1 + Math.random()}rem;
+                    pointer-events: none;
+                    --nx: ${nx}px;
+                    animation: noteFloat 1.8s ease forwards;
+                    z-index: 999;
+                `;
+                        wrap.appendChild(note);
+                        note.addEventListener('animationend', () => note.remove());
+                    }, i * 120);
+                }
+            } else if (type === 'taxi') {
+                const taxi = document.createElement('div');
+                taxi.textContent = '🚕';
+                taxi.style.cssText = `
+            position: fixed;
+            top: ${30 + Math.random() * 40}%;
+            left: -80px;
+            font-size: 3rem;
+            z-index: 9999;
+            pointer-events: none;
+            animation: taxiDrive 2s ease-in-out forwards;
+        `;
+                document.body.appendChild(taxi);
+                taxi.addEventListener('animationend', () => taxi.remove());
+            } else {
+                display.classList.remove('timer-boosting');
+                void display.offsetWidth;
+                display.classList.add('timer-boosting');
+                display.addEventListener('animationend', () => display.classList.remove('timer-boosting'), { once: true });
+
+                if (addedMinutes > 0) {
+                    const label = document.createElement('span');
+                    label.className = 'plus-label';
+                    label.textContent = `+${addedMinutes} 分鐘`;
+                    wrap.appendChild(label);
+                    label.addEventListener('animationend', () => label.remove());
+                }
+            }
+        }
+
+        // --- 核心斗內處理邏輯 ---
+        async function initiatePlayerDonate(planName, amount, defaultMsg, addedMinutes, animType = 'default') {
+            const { value: customMsg } = await Swal.fire({
+                title: `贊助 ${planName} ($${amount})`,
+                input: 'textarea',
+                inputLabel: '寫句話，給還在加班的主播一點力量吧...',
+                inputPlaceholder: defaultMsg,
+                showCancelButton: true,
+                confirmButtonText: '送出溫暖',
+                cancelButtonText: '取消',
+                background: '#212529', color: '#fff', confirmButtonColor: '#ffc107'
+            });
+            if (customMsg !== undefined) {
+                let finalMsg = customMsg.trim() === "" ? defaultMsg : customMsg.trim();
+                processDonation(playerState.id, playerState.name, amount, finalMsg, addedMinutes, true, animType);
+            }
+        }
+
+        function processDonation(userId, userName, amount, message, addedMinutes, isPlayer, animType = 'default') {
+            if (addedMinutes > 0) {
+                remainingSeconds += addedMinutes * 60;
+                updateTimerUI();
+                boostTimer(addedMinutes, animType);
+            } else if (animType === 'taxi') {
+                boostTimer(0, 'taxi');
+            }
+            if (!donationLedger[userId]) { donationLedger[userId] = { name: userName, amount: 0, lastMsg: "", isPlayer: isPlayer }; }
+            donationLedger[userId].amount += amount;
+            donationLedger[userId].lastMsg = message;
+            if (isPlayer) playerState.totalDonated = donationLedger[userId].amount;
+            if (isPlayer) { Swal.fire({ icon: "success", title: "溫暖已送達！", text: `感謝贊助，目前累計送暖 $${playerState.totalDonated}`, timer: 2000, showConfirmButton: false, background: '#212529', color: '#fff' }); }
+            shootDanmaku(`${userName} 贊助了 $${amount}: ${message}`, isPlayer);
+            addOverlayChat(userName, message, isPlayer, true);
+            updateCheerWall();
+        }
+
+        // --- 畫面更新邏輯 ---
+        function shootDanmaku(text, isPlayer) {
+            const container = document.getElementById('danmaku-container');
+            const span = document.createElement('span');
+            span.className = `danmaku-msg ${isPlayer ? 'danmaku-player' : 'danmaku-bot'}`;
+            span.innerText = text;
+            span.style.top = (Math.floor(Math.random() * 60) + 10) + '%';
+            container.appendChild(span);
+            setTimeout(() => { span.remove(); }, 8000);
+        }
+
+        function addOverlayChat(userName, msg, isPlayer = false, isDonate = false) {
+            const container = document.getElementById('chat-messages-container');
+            const div = document.createElement('div');
+            let classNames = "chat-msg";
+            if (isDonate) classNames += " chat-msg-donate";
+            div.className = classNames;
+            let nameHtml = isPlayer ? `<strong class="aurora-text">${userName}</strong>` : `<strong style="color: ${["#ff9999", "#99ffcc", "#99ccff", "#ffff99", "#cc99ff"][Math.floor(Math.random() * 5)]}">${userName}</strong>`;
+            div.innerHTML = `${nameHtml}: ${msg}`;
+            container.appendChild(div);
+            if (container.children.length > 12) container.removeChild(container.firstElementChild);
+        }
+
+        function updateCheerWall() {
+            const container = document.getElementById('cheer-wall-container');
+            let sortedData = Object.values(donationLedger).sort((a, b) => b.amount - a.amount);
+            if (sortedData.length === 0) return;
+            container.innerHTML = '';
+            let topDonors = sortedData.slice(0, 6);
+            topDonors.forEach((data, index) => {
+                let rankClass = index === 0 ? 'cheer-rank-1' : (index === 1 ? 'cheer-rank-2' : (index === 2 ? 'cheer-rank-3' : ''));
+                let nameDisplay = data.isPlayer ? `<span class="aurora-text">${data.name}</span>` : data.name;
+                let div = document.createElement('div');
+                div.className = "col-md-6 col-lg-4";
+                div.innerHTML = `<div class="cheer-card p-3 h-100 ${rankClass}"><div class="d-flex justify-content-between align-items-center border-bottom border-secondary pb-2 mb-2"><h5 class="mb-0 text-light fw-bold">#${index + 1} ${nameDisplay}</h5><span class="badge bg-warning text-dark rounded-pill">累計 $${data.amount}</span></div><p class="text-light mb-0" style="font-style: italic;">"${data.lastMsg}"</p></div>`;
+                container.appendChild(div);
+            });
+        }
+
+
+
+
+        // --- 陪伴模擬器 ---
+        const startChatSimulation = () => {
+            const adjectives = ["直到天明X", "準備裸考的", "不想努力的", "剛續杯咖啡的", "熬夜寫code的", "WFH的", "準備爆肝的", "聽歌聽到天亮的"];
+            const nouns = ["研究生", "高級打工仔", "芒果", "Freelancer", "阿拓", "蚊子", "PM", "小桃", "金城武"];
+            const prefixes = ["有人還在聽嗎？", "Oh man...", "大家加油！", "唉，", "聽到這首就覺得，", "Keep going，", "打卡，", "不知不覺又這個時間了..."];
+            const subjects = ["這份 paper", "明天的 presentation", "這個 project", "期末考", "老闆的 deadline", "人生", "這堆作業"];
+            const actions = ["真的寫不完", "快搞死我了", "一起撐下去吧", "希望能順利 pass", "終於告一段落了", "never give up", "大家都不容易", "需要一點奇蹟"];
+            const suffixes = [" 🥺", " 🔥", " QQ", " 💤", " 加油💪", " ...", " 🙏", " (嘆)"];
+            const botDonateMsgs = [
+                "祝大家考試順利！All pass！",
+                "一點小小心意，感謝這音樂陪我熬夜寫論文 🙏",
+                "剛領薪水來贊助一下，大家加班加油💪",
+                "Keep up the good work! 拿去買杯咖啡吧☕",
+                "還在加班的各位，我們互相取暖嗚嗚",
+                "聽這音樂真的能靜下來，support you!",
+                "我也剛離開辦公室，這點錢給你買宵夜，撐住！",
+                "剛剛發薪水，分你一點當夜宵基金☕",
+                "大家都還在加班，我們互相取暖嗚嗚",
+                "撐過今天就好了，這點心意給你補補血"
+            ];
+
+            // 固定常客：名字會重複出現，容易累積贊助金額爬上排行榜
+            const regularBots = ["庫斯德國王", "論文苦海的Chang", "John_Doe", "根本沒有彼岸工程師", "松鼠巴奇", "是新八不是辛巴"];
+
+            const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+            const generateMessage = () => {
+                // 10% 機率是常客，90% 是隨機路人
+                let isRegularBot = Math.random() < 0.1;
+                let botId = isRegularBot
+                    ? getRandom(regularBots)
+                    : `${getRandom(adjectives)}${getRandom(nouns)}${Math.floor(Math.random() * 100)}`;
+
+                if (Math.random() < 0.15) {
+                    // 15% 機率觸發贊助
+                    let amt = [30, 50, 100, 150, 200][Math.floor(Math.random() * 5)];
+                    let addedMins = [0, 0, 1][Math.floor(Math.random() * 3)]; // 1/3 機率加 2 分鐘
+                    processDonation(botId, botId, amt, getRandom(botDonateMsgs), addedMins, false);
+                } else {
+                    // 85% 機率只是普通留言
+                    let message = `${getRandom(prefixes)} ${getRandom(subjects)} ${getRandom(actions)}${getRandom(suffixes)}`;
+                    addOverlayChat(botId, message, false, false);
+                }
+
+                // 每隔 2~6 秒產生下一則訊息
+                setTimeout(generateMessage, Math.floor(Math.random() * 4000) + 2000);
+            };
+
+            generateMessage();
+        };
+
+        // --- 開場初始化 ---
+        const initScene = () => {
+            // 1. 倒數計時設為 100秒
+            remainingSeconds = 100;
+            updateTimerUI();
+
+            // 2. 排行榜預設 2 位贊助者
+            processDonation("庫斯德國王", "庫斯德國王", 7788, "聽著，本國王——也就是庫斯德（對，尖叫聲可以小聲一點，我知道我很帥）——今天心情簡直好到爆表。為什麼？因為我剛照過鏡子，而鏡子裡的那個人簡直是完美的化身。所以，算你運氣好，我決定從我那堆得像山一樣高的金幣裡，分出那麼一丁點「小點心」給你。這點小小的心意，拿去買杯咖啡吧！不過記得，這只是我對你的一點點獎勵，真正的寶藏是你自己啊！", 0, false);
+
+
+            // 3. 延遲 8 秒後，示範路人點播音樂
+            setTimeout(() => {
+                processDonation("根本沒有彼岸工程師", "根本沒有彼岸工程師", 30, "點一首歌陪大家繼續撐，加油！🎵", 1, false);
+            }, 8000);
+
+            setTimeout(() => {
+                processDonation("是新八不是辛巴", "是新八不是辛巴", 180, "看吧，辛巴。陽光照耀之處，皆是我們的國土，哈酷拉馬塔塔", 0, false);
+            }, 15000);
+        };
+
+        initScene();
+        startChatSimulation();
+
+    </script>
+
+    <footer class="row justify-content-center">
+        <div>
+            <a href="#"><span class="material-icons"><span class="material-symbols-outlined">
+                        arrow_warm_up
+                    </span></span></a>
+            <p>No Copyright &copy; 新營區營業處 陳重運 All rights non-reserved.</p>
+        </div>
+    </footer>
+</body>
+
+</html>
