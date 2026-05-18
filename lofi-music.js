@@ -361,7 +361,7 @@ class LofiGenerativePad {
         });
 
         this.chorus = new Tone.Chorus(0.1, 2.5, 0.5).start();
-        this.reverb = new Tone.Reverb({ decay: 3, wet: 0.3 });
+        this.reverb = new Tone.Reverb({ decay: 2.5, wet: 0.25 });
         this.filter = new Tone.Filter(1200, 'lowpass');
         this.highpass = new Tone.Filter(200, 'highpass');
         this.volume = new Tone.Volume(-14);
@@ -470,8 +470,8 @@ class LofiContextAwarePiano {
         });
 
         this.vibrato = new Tone.Vibrato({ frequency: 3.5, depth: 0.08 });
-        this.pingpong = new Tone.PingPongDelay('8n.', 0.3);
-        this.reverb = new Tone.Reverb({ decay: 5, wet: 0.4 });
+        this.pingpong = new Tone.PingPongDelay('8n.', 0.2);
+        this.reverb = new Tone.Reverb({ decay: 3, wet: 0.3 });
         this.volume = new Tone.Volume(-5);
         this.synth.chain(this.vibrato, this.pingpong, this.reverb, this.volume, destination);
 
@@ -600,6 +600,12 @@ class LofiEngine {
         this.instruments.piano.start();
         Tone.Transport.start();
         this.isPlaying = true;
+        this._gcInterval = setInterval(() => {
+    if (!this.isPlaying) return;
+    // 定期 release 所有殘留音符
+    this.instruments.pad.synth.releaseAll();
+    this.instruments.piano.synth.releaseAll();
+}, 5 * 60 * 1000); // 每 5 分鐘
     }
 
     stop() {
@@ -609,6 +615,7 @@ class LofiEngine {
             Object.values(this.instruments).forEach(instrument => instrument.stop());
             this.isPlaying = false;
         }, 500);
+        clearInterval(this._gcInterval);
     }
 
     setVolume(value) {
