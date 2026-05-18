@@ -19,13 +19,13 @@ if (VIZ && VIZ.children.length === 0) {
 }
 
 function setVizActive(on) {
-    if (!VIZ) return;
-    VIZ.querySelectorAll('.bar').forEach(b => {
-        if (on) b.classList.add('active');
-        else b.classList.remove('active');
+    document.querySelectorAll('.mini-viz').forEach(viz => {
+        if (on) {
+            viz.classList.add('active');
+        } else {
+            viz.classList.remove('active');
+        }
     });
-    const disc = document.getElementById('vinyl-disc');
-    if (disc) disc.classList.toggle('spinning', on);
 }
 
 function onVolInput(el) {
@@ -626,10 +626,18 @@ class LofiEngine {
 const engine = new LofiEngine();
 
 async function toggleMusic() {
+    await Tone.start();
+    if (Tone.context.state !== 'running') {
+        Tone.context.resume();
+    }
+
     const slider = document.getElementById('volume-slider');
     const currentVolume = slider ? slider.value : 50;
+    
+    // 取得播放狀態 (true = 播放中, false = 已暫停)
     const isNowPlaying = await engine.togglePlay(currentVolume);
 
+    // 強制更新音軌動畫狀態
     setVizActive(isNowPlaying);
 
     const btnLabel = document.getElementById('music-btn-label');
@@ -637,17 +645,22 @@ async function toggleMusic() {
     const status = document.getElementById('music-status');
 
     if (isNowPlaying) {
+        // --- 啟動播放時的行為 ---
         if (btnLabel) btnLabel.textContent = '暫停';
         if (icon) icon.textContent = 'pause';
         if (status) status.textContent = `🎵 ${engine.getStyle().label} 播放中`;
 
+        // 只有啟動播放時，才會跳出 Donate 視窗
         if (typeof initiatePlayerDonate === 'function') {
             initiatePlayerDonate('點播陪伴音樂', 30, '謝謝音樂陪伴，大家一起深呼吸！', 3, 'music');
         }
     } else {
+        // --- 暫停時的行為 ---
         if (btnLabel) btnLabel.textContent = '播放背景音樂';
         if (icon) icon.textContent = 'play_arrow';
         if (status) status.textContent = '⏸ 已停止';
+        
+        // 絕對不觸發 initiatePlayerDonate 視窗！
     }
 }
 
