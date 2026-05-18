@@ -381,6 +381,41 @@
         .cheer-rank-3 {
             border-left: 5px solid #cd7f32;
         }
+
+        .mini-viz {
+            display: flex;
+            align-items: flex-end;
+            gap: 4px;
+            height: 24px;
+            padding-bottom: 4px;
+        }
+
+        .mini-viz .bar {
+            width: 2px;
+            background-color: #6c757d;
+            /* 暫停時的顏色：暗灰色 */
+            height: 2px;
+            /* 暫停時的高度：呈現一直線 */
+            border-radius: 2px;
+            transition: background-color 0.3s ease;
+        }
+
+        /* 播放中狀態：改變顏色並加上跳動動畫 */
+        .mini-viz.active .bar {
+            background-color: #ffc107;
+            /* 播放時變成黃色 */
+            animation: bounce-bar var(--dur) ease-in-out infinite alternate;
+        }
+
+        @keyframes bounce-bar {
+            0% {
+                height: 3px;
+            }
+
+            100% {
+                height: var(--peak);
+            }
+        }
     </style>
     <!--真的音樂靠js-->
     <script src="https://cdn.jsdelivr.net/npm/tone@15/build/Tone.js"></script>
@@ -470,8 +505,17 @@
         <!-- 下班倒數計時器 -->
         <div class="row mt-4">
             <div class="col-12">
-                <div class="timer-box p-3 rounded text-center">
-                    <h4 class="mb-0">
+                <div class="timer-box p-3 rounded d-flex justify-content-between align-items-center">
+
+                    <div class="mini-viz" id="viz-left">
+                        <div class="bar" style="--peak: 12px; --dur: 0.3s;"></div>
+                        <div class="bar" style="--peak: 18px; --dur: 0.5s;"></div>
+                        <div class="bar" style="--peak: 10px; --dur: 0.4s;"></div>
+                        <div class="bar" style="--peak: 20px; --dur: 0.6s;"></div>
+                        <div class="bar" style="--peak: 14px; --dur: 0.35s;"></div>
+                    </div>
+
+                    <h4 class="mb-0 text-center flex-grow-1">
                         <span class="material-symbols-outlined align-middle text-warning">timer</span>
                         大家還能陪主播撐：
                         <div style="position:relative; display:inline-block;">
@@ -479,6 +523,15 @@
                                 class="text-warning fw-bold fs-2 font-monospace align-middle ms-2">01:00:00</span>
                         </div>
                     </h4>
+
+                    <div class="mini-viz" id="viz-right">
+                        <div class="bar" style="--peak: 14px; --dur: 0.35s;"></div>
+                        <div class="bar" style="--peak: 20px; --dur: 0.6s;"></div>
+                        <div class="bar" style="--peak: 10px; --dur: 0.4s;"></div>
+                        <div class="bar" style="--peak: 18px; --dur: 0.5s;"></div>
+                        <div class="bar" style="--peak: 12px; --dur: 0.3s;"></div>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -708,6 +761,11 @@
 
         // --- 核心斗內處理邏輯 ---
         async function initiatePlayerDonate(planName, amount, defaultMsg, addedMinutes, animType = 'default') {
+            let footerHtml = ''; /*靜音提醒*/
+            if (animType === 'music') {
+                footerHtml = '<span style="color:#ffc107; font-size:0.9rem;">💡 手機版聽不到聲音？請確認已關閉側邊「實體靜音鍵」喔！</span>';
+            }
+
             const { value: customMsg } = await Swal.fire({
                 title: `贊助 ${planName} ($${amount})`,
                 input: 'textarea',
@@ -786,12 +844,48 @@
 
         // --- 陪伴模擬器 ---
         const startChatSimulation = () => {
-            const adjectives = ["直到天明X", "準備裸考的", "不想努力的", "剛續杯咖啡的", "熬夜寫code的", "WFH的", "準備爆肝的", "聽歌聽到天亮的"];
-            const nouns = ["研究生", "高級打工仔", "芒果", "Freelancer", "阿拓", "蚊子", "PM", "小桃", "金城武"];
-            const prefixes = ["有人還在聽嗎？", "Oh man...", "大家加油！", "唉，", "聽到這首就覺得，", "Keep going，", "打卡，", "不知不覺又這個時間了..."];
-            const subjects = ["這份 paper", "明天的 presentation", "這個 project", "期末考", "老闆的 deadline", "人生", "這堆作業"];
-            const actions = ["真的寫不完", "快搞死我了", "一起撐下去吧", "希望能順利 pass", "終於告一段落了", "never give up", "大家都不容易", "需要一點奇蹟"];
-            const suffixes = [" 🥺", " 🔥", " QQ", " 💤", " 加油💪", " ...", " 🙏", " (嘆)"];
+            const adjectives = ["直到天明X", "準備裸考的", "不想努力的", "剛續杯咖啡的", "熬夜寫code的", "WFH的", "準備爆肝的", "聽歌聽到天亮的", "期末地獄中的", "邊聽歌邊發呆的", "不想面對現實的", "準備通宵的", "還在公司沒回家的", "邊寫 code 邊懷疑自己的", "努力生活的", "和大家一起熬夜的"];
+            const nouns = ["研究生", "高級打工仔", "芒果", "Freelancer", "阿拓", "蚊子", "PM", "小桃", "金城武", "小傑", "剪片師", "工程師"];
+            const prefixes = ["有人還在聽嗎？", "Oh man...", "大家加油！", "唉，", "聽到這首就覺得，", "Keep going，", "打卡，", "不知不覺又這個時間了...", "有人還醒著嗎？",
+                "聊天室辛苦了",
+                "大家還撐得住嗎",
+                "深夜打卡",
+                "又是努力活著的一天",
+                "這首太有感了...",
+                "突然覺得大家都很努力",
+                "聽到這首直接破防",
+                "凌晨聊天室集合",
+                "還有人在趕東西嗎",
+                "看到聊天室突然沒那麼孤單了",
+                "今天也一起加油吧",
+                "不知道為什麼突然很想哭",
+                "這時間還在線上的都是真戰士",
+                "一起撐到天亮吧",
+                "今天也努力活下來了",
+                "來簽到一下",
+                "還有人跟我一樣沒睡嗎"];
+            const subjects = ["這份 paper", "明天的 presentation", "這個 project", "期末考", "老闆的 deadline", "人生", "這堆作業", "今天的進度", "這個bug", "需求變更"];
+            const actions = ["真的寫不完", "快搞死我了", "一起撐下去吧", "希望能順利 pass", "終於告一段落了", "never give up", "大家都不容易", "需要一點奇蹟", "真的快寫不完了",
+                "好像終於有點進展了",
+                "大家一起撐下去吧",
+                "今晚一定要做完",
+                "希望明天不要爆炸",
+                "突然沒那麼孤單了",
+                "感覺聊天室都在努力",
+                "先不要放棄",
+                "至少音樂很好聽",
+                "快被自己笑死",
+                "需要一點奇蹟",
+                "再一下下就好",
+                "已經不知道第幾杯咖啡了",
+                "努力活著真的很難",
+                "但還是得繼續",
+                "我們都辛苦了",
+                "總之先撐過今天",
+                "希望未來的自己會感謝現在",
+                "聽著歌比較有動力了"
+            ];
+            const suffixes = [" 🥺", " 🔥", " QQ", " 💤", " 加油💪", " ...", " 🙏", " (嘆)", "wwwww", "QAQ", "喔喔喔"];
             const botDonateMsgs = [
                 "祝大家考試順利！All pass！",
                 "一點小小心意，感謝這音樂陪我熬夜寫論文 🙏",
@@ -802,7 +896,44 @@
                 "我也剛離開辦公室，這點錢給你買宵夜，撐住！",
                 "剛剛發薪水，分你一點當夜宵基金☕",
                 "大家都還在加班，我們互相取暖嗚嗚",
-                "撐過今天就好了，這點心意給你補補血"
+                "撐過今天就好了，這點心意給你補補血",
+                "給還醒著的各位一點咖啡基金 ☕",
+                "深夜努力的人都值得被請一杯咖啡",
+                "大家一起撐過 deadline 吧💪",
+                "這台真的救了我今晚的情緒",
+                "給聊天室的大家一點補血",
+                "還在加班的各位辛苦了",
+                "希望大家都能順利畢業 🙏",
+                "聽著這裡比較不孤單",
+                "大家一起努力的感覺真好",
+                "今天也陪我撐過去了，感謝",
+                "給還沒放棄的各位一點小心意",
+                "聊天室根本深夜避風港",
+                "祝正在努力的人都有好結果",
+                "這裡的氣氛真的很像有人陪著一起熬夜",
+                "給正在寫論文、寫 code、趕報告的你們",
+                "各位夜行生物辛苦了 🌙",
+                "願大家的 bug 都一次解掉",
+                "希望明天醒來世界不要毀滅 QQ",
+                "主管說這很急，但他昨天才想到 😭",
+                "今天最大的成就是準時登入 meeting",
+                "這個需求很簡單 — 來自完全不會做的人",
+                "我不是薪水小偷，我是薪水乞丐",
+                "公司最大的 KPI：活著下班",
+
+                // ===== 鬧場型 =====
+                "誰把我的人生難度調成 nightmare mode？",
+                "聊天室有人會寫遺書嗎 我先學一下",
+                "再不下班我要開始在公司種香菇了",
+                "我懷疑我的待辦事項會自己增值",
+                "這不是工作，這是生存遊戲",
+
+                // ===== 歌詞梗 =====
+                "殘酷な天使のテーゼ… 少年よ 神話になれ ✨",
+                "再被你提起，已經是連名帶姓，謊稱是友誼，卻疏遠的可以",
+                "等不到天黑 煙火不會太完美 🌌",
+                "讓我將妳心兒摘下 試著將他慢慢溶化 🍃",
+                "黑U 密斯特Q 愛你耍Q的指數 電流像瀑布 ⭐",
             ];
 
             // 固定常客：名字會重複出現，容易累積贊助金額爬上排行榜
@@ -820,7 +951,7 @@
                 if (Math.random() < 0.15) {
                     // 15% 機率觸發贊助
                     let amt = [30, 50, 100, 150, 200][Math.floor(Math.random() * 5)];
-                    let addedMins = [0, 0, 1][Math.floor(Math.random() * 3)]; // 1/3 機率加 2 分鐘
+                    let addedMins = [0, 0, 0, 0, 2][Math.floor(Math.random() * 5)]; // 1/5 機率加 2 分鐘
                     processDonation(botId, botId, amt, getRandom(botDonateMsgs), addedMins, false);
                 } else {
                     // 85% 機率只是普通留言
@@ -829,7 +960,7 @@
                 }
 
                 // 每隔 2~6 秒產生下一則訊息
-                setTimeout(generateMessage, Math.floor(Math.random() * 4000) + 2000);
+                setTimeout(generateMessage, Math.floor(Math.random() * 6000) + 3500);
             };
 
             generateMessage();
@@ -842,7 +973,7 @@
             updateTimerUI();
 
             // 2. 排行榜預設 2 位贊助者
-            processDonation("庫斯德國王", "庫斯德國王", 7788, "聽著，本國王——也就是庫斯德（對，尖叫聲可以小聲一點，我知道我很帥）——今天心情簡直好到爆表。為什麼？因為我剛照過鏡子，而鏡子裡的那個人簡直是完美的化身。所以，算你運氣好，我決定從我那堆得像山一樣高的金幣裡，分出那麼一丁點「小點心」給你。這點小小的心意，拿去買杯咖啡吧！不過記得，這只是我對你的一點點獎勵，真正的寶藏是你自己啊！", 0, false);
+            processDonation("庫斯德國王", "庫斯德國王", 7788, "聽著，本國王——也就是庫斯德（對，尖叫聲可以小聲一點，我知道我很帥）——今天心情簡直好到爆表。為什麼？因為我剛照過鏡子，而鏡子裡的那個人簡直是完美的化身。所以，算你運氣好，我決定從我那堆得像山一樣高的金幣裡，分出那麼一丁點「小點心」給你。這點小小的心意，拿去買杯咖啡吧！不過記得，這只是我對你的一點點獎勵，真正的寶藏是你自己啊！", 20000, false);
 
 
             // 3. 延遲 8 秒後，示範路人點播音樂
@@ -852,7 +983,7 @@
 
             setTimeout(() => {
                 processDonation("是新八不是辛巴", "是新八不是辛巴", 180, "看吧，辛巴。陽光照耀之處，皆是我們的國土，哈酷拉馬塔塔", 0, false);
-            }, 15000);
+            }, 100);
         };
 
         initScene();
